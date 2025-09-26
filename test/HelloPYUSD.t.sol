@@ -35,4 +35,37 @@ contract HelloPYUSDTest is Test {
         assertEq(helloPYUSD.balanceOf(address(this)), 1);
         assertEq(helloPYUSD.totalIssued(), 1);
     }
+
+    function testWithdraw_ByOwner() public {
+        // Prepare: mint once to move PYUSD into the contract
+        pyusd.mint(address(this), MINT_PRICE);
+        pyusd.approve(address(helloPYUSD), MINT_PRICE);
+        helloPYUSD.mint();
+
+        // pre-assert: funds are in the contract
+        assertEq(pyusd.balanceOf(address(helloPYUSD)), MINT_PRICE);
+        assertEq(pyusd.balanceOf(address(this)), 0);
+
+        // withdraw by owner (this test contract is the owner)
+        helloPYUSD.withdraw(address(this), MINT_PRICE);
+
+        // post-assert: funds moved back to owner, contract drained
+        assertEq(pyusd.balanceOf(address(helloPYUSD)), 0);
+        assertEq(pyusd.balanceOf(address(this)), MINT_PRICE);
+    }
+
+    function testWithdraw_RevertIfNotOwner() public {
+        address attacker = address(0xBEEF);
+
+        // Move funds into the contract first
+        pyusd.mint(address(this), MINT_PRICE);
+        pyusd.approve(address(helloPYUSD), MINT_PRICE);
+        helloPYUSD.mint();
+        assertEq(pyusd.balanceOf(address(helloPYUSD)), MINT_PRICE);
+
+        // Expect revert when non-owner tries to withdraw
+        vm.prank(attacker);
+        vm.expectRevert(bytes("NOT_OWNER"));
+        helloPYUSD.withdraw(attacker, MINT_PRICE);
+    }
 }
