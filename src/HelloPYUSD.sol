@@ -2,16 +2,21 @@
 pragma solidity 0.8.23;
 
 import {ERC721} from "solmate/tokens/ERC721.sol";
+import {ERC20} from "solmate/tokens/ERC20.sol";
 
 contract HelloPYUSD is ERC721 {
     uint256 public totalIssued;
+    ERC20 public immutable mintToken;
+    uint256 public immutable mintPrice;
 
-    constructor() {
-        name = "HelloPYUSD";
-        symbol = "HIPYPL";
+    constructor(address _mintToken, uint256 _mintPrice) ERC721("HelloPYUSD", "HIPYPL") {
+        mintToken = ERC20(_mintToken);
+        mintPrice = _mintPrice;
     }
 
     function mint() external {
+        // Pull PYUSD from caller first, then mint the NFT
+        mintToken.transferFrom(msg.sender, address(this), mintPrice);
         _mint(msg.sender, ++totalIssued);
     }
 
